@@ -8,6 +8,9 @@ import { DatabaseModule } from './database/database.module';
 import { ProductsModule } from './products/products.module';
 import { OrdersModule } from './orders/orders.module';
 import { OrderItemsModule } from './order-items/order-items.module';
+import { GraphQLModule } from '@nestjs/graphql';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
+import { AppResolver } from './app.resolver';
 
 @Module({
   imports: [
@@ -20,9 +23,16 @@ import { OrderItemsModule } from './order-items/order-items.module';
     ProductsModule,
     OrdersModule,
     OrderItemsModule,
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      path: '/graphql',
+      playground: true,
+      sortSchema: true,
+    }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, AppResolver],
 })
 
 export class AppModule { }
