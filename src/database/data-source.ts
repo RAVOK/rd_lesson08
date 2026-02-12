@@ -22,4 +22,8 @@ export const AppDataSource = new DataSource({
   schema: configService.get<string>('DB_SCHEMA'),
   entities: [User, Product, Order, OrderItem],
   migrations: ['dist/migrations/*.js'],
+  //logging: ['query', 'error', 'warn'], // Логує всі запити, помилки та попередження
+  //logger: 'advanced-console', // Використовує розширений консольний логер для кращого форматування
+  //maxQueryExecutionTime: 1000, // Логує запити > 1000ms
+  logging: false, // Включає логування усіх SQL запитів
 });

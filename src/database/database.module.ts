@@ -20,9 +20,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         database: configService.get<string>('DB_NAME'),
         schema: configService.get<string>('DB_SCHEMA'),
         autoLoadEntities: true,
-        synchronize: false, // тільки для dev => true
+        //logging: ['query', 'error', 'warn'], // Логує всі запити, помилки та попередження
+        logger: 'advanced-console', // Використовує розширений консольний логер для кращого форматування
+        //maxQueryExecutionTime: 1000, // Логує запити > 1000ms
+        logging: true, // Включає логування усіх SQL запитів
       }),
     }),
   ],
 })
-export class DatabaseModule {}
+export class DatabaseModule { }

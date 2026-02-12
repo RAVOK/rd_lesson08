@@ -1,0 +1,91 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Order {
+  createdAt: DateTime!
+  customerName: String!
+  id: ID!
+  idempotencyKey: String!
+  items: [OrderItem!]!
+  status: OrderStatus!
+  total: Float!
+  updatedAt: DateTime!
+  user: User
+}
+
+type OrderItem {
+  created_at: DateTime!
+  id: ID!
+  price: Float!
+  product: Product!
+  quantity: Float!
+  updated_at: DateTime!
+}
+
+enum OrderStatus {
+  CANCELLED
+  COMPLETED
+  PAID
+  PENDING
+  SHIPPED
+}
+
+type OrdersConnection {
+  nodes: [Order!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+input OrdersFilterInput {
+  dateFrom: DateTime
+  dateTo: DateTime
+  status: OrderStatus
+}
+
+input OrdersPaginationInput {
+  limit: Int
+  offset: Int
+}
+
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+}
+
+type Product {
+  created_at: DateTime!
+  id: ID!
+  price: Float!
+  stock: Int!
+  title: String!
+  updated_at: DateTime!
+}
+
+type Query {
+  """Простий тестовий GraphQL-запит"""
+  hello: String!
+
+  """Отримати замовлення за ID"""
+  order(id: Int!): Order
+
+  """Отримати список усіх замовлень"""
+  orders(filter: OrdersFilterInput, pagination: OrdersPaginationInput): [Order!]!
+
+  """Отримати замовлення з пагінацією (Connection Pattern)"""
+  ordersConnection(filter: OrdersFilterInput, pagination: OrdersPaginationInput): OrdersConnection!
+}
+
+type User {
+  email: String!
+  id: ID!
+  name: String!
+  orders: [Order!]!
+}

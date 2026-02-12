@@ -23,11 +23,97 @@ export class OrdersService {
     ) { }
 
     async getAllOrders(): Promise<Order[]> {
-        return this.orderRepo.find({ relations: ['items', 'user'] });
+        return this.orderRepo.find({ relations: ['items', 'items.product', 'user'] });
     }
 
+    async getOrders(
+        filter?: { status?: Order['status']; dateFrom?: Date; dateTo?: Date },
+        pagination?: { limit?: number; offset?: number },
+    ): Promise<Order[]> {
+        const qb = this.orderRepo
+            .createQueryBuilder('order')
+            .leftJoinAndSelect('order.items', 'items')
+            .leftJoinAndSelect('items.product', 'product')
+            .leftJoinAndSelect('order.user', 'user');
+
+        if (filter?.status) {
+            qb.andWhere('order.status = :status', { status: filter.status });
+        }
+
+        if (filter?.dateFrom) {
+            qb.andWhere('order.createdAt >= :dateFrom', { dateFrom: filter.dateFrom });
+        }
+
+        if (filter?.dateTo) {
+            qb.andWhere('order.createdAt <= :dateTo', { dateTo: filter.dateTo });
+        }
+
+        if (pagination?.limit !== undefined) {
+            qb.take(pagination.limit);
+        }
+
+        if (pagination?.offset !== undefined) {
+            qb.skip(pagination.offset);
+        }
+
+        return qb.getMany();
+    }
+    async getOrdersConnection(
+        filter?: { status?: Order['status']; dateFrom?: Date; dateTo?: Date },
+        pagination?: { limit?: number; offset?: number },
+    ): Promise<{
+        nodes: Order[];
+        totalCount: number;
+        pageInfo: {
+            hasNextPage: boolean;
+            hasPreviousPage: boolean;
+            startCursor?: string;
+            endCursor?: string;
+        };
+    }> {
+        const limit = pagination?.limit ?? 10;
+        const offset = pagination?.offset ?? 0;
+
+        // Будуємо QueryBuilder для розрахунку загальної кількості
+        const countQb = this.orderRepo.createQueryBuilder('order');
+
+        if (filter?.status) {
+            countQb.andWhere('order.status = :status', { status: filter.status });
+        }
+
+        if (filter?.dateFrom) {
+            countQb.andWhere('order.createdAt >= :dateFrom', { dateFrom: filter.dateFrom });
+        }
+
+        if (filter?.dateTo) {
+            countQb.andWhere('order.createdAt <= :dateTo', { dateTo: filter.dateTo });
+        }
+
+        const totalCount = await countQb.getCount();
+
+        // Отримуємо дані з пагінацією
+        const nodes = await this.getOrders(filter, pagination);
+
+        // Визначаємо pageInfo
+        const hasNextPage = offset + limit < totalCount;
+        const hasPreviousPage = offset > 0;
+
+        const startCursor = nodes.length > 0 ? Buffer.from(`offset:${offset}`).toString('base64') : undefined;
+        const endCursor = nodes.length > 0 ? Buffer.from(`offset:${offset + nodes.length}`).toString('base64') : undefined;
+
+        return {
+            nodes,
+            totalCount,
+            pageInfo: {
+                hasNextPage,
+                hasPreviousPage,
+                startCursor,
+                endCursor,
+            },
+        };
+    }
     async getOrderById(id: number): Promise<Order> {
-        const order = await this.orderRepo.findOne({ where: { id }, relations: ['items', 'user'] });
+        const order = await this.orderRepo.findOne({ where: { id }, relations: ['items', 'items.product', 'user'] });
         if (!order) throw new NotFoundException(`Order ${id} not found`);
         return order;
     }

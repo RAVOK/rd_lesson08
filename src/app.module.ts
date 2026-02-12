@@ -10,7 +10,7 @@ import { OrdersModule } from './orders/orders.module';
 import { OrderItemsModule } from './order-items/order-items.module';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
-import { AppResolver } from './app.resolver';
+import { AppResolver } from './graphQL/app.resolver';
 
 @Module({
   imports: [
