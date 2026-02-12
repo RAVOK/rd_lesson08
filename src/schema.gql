@@ -43,8 +43,8 @@ type OrdersConnection {
 }
 
 input OrdersFilterInput {
-  dateFrom: DateTime
-  dateTo: DateTime
+  dateFrom: String
+  dateTo: String
   status: OrderStatus
 }
 

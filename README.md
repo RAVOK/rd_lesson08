@@ -400,3 +400,106 @@ WHERE ("order"."status" = $1)
   AND ("order"."id" IN (1,
                         2,
                         3)) -- PARAMETERS: ["PENDING"]
+
+### 4.2 Реалізувати DataLoader
+Додано фабрику DataLoader:
+    файл: product.loader.ts
+Поставлено DataLoader в контекст GraphQL:
+    файл: graphql.module.ts (context створює loaders.productLoader на кожен request через 
+    scope «one loader per request».
+Змінено резолвер для OrderItem:
+    файл: src/order-items/order-items.resolver.ts
+
+### 4.3 Доказ, що N+1 зник
+N+1 відсутній:
+Усього 2 sql запити:
+1. отримання ідентифікаторів замовлень з урахуванням пагінації
+2. отримання результуючого запиту
+
+
+Запит:
+{
+  "query": "query TestDataLoader($pagination: OrdersPaginationInput) { orders(pagination: $pagination) { id items { quantity product { id title price } } } }",
+  "variables": {
+    "pagination": { "limit": 2, "offset": 0 }
+  }
+}
+Відповідь:
+{"data":{"orders":[{"id":"2","items":[{"quantity":1,"product":{"id":"6","title":"Mouse Razer","price":80}},{"quantity":2,"product":{"id":"4","title":"Monitor LG 27\"","price":400}},{"quantity":1,"product":{"id":"2","title":"Smartphone Samsung","price":800}}]},{"id":"1","items":[{"quantity":2,"product":{"id":"5","title":"Keyboard Logitech","price":100}},{"quantity":2,"product":{"id":"2","title":"Smartphone Samsung","price":800}},{"quantity":2,"product":{"id":"4","title":"Monitor LG 27\"","price":400}}]}]}}
+
+SQL:
+Запит 1
+SELECT DISTINCT "distinctAlias"."order_id" AS "ids_order_id"
+FROM
+  (SELECT "order"."id" AS "order_id",
+          "order"."total" AS "order_total",
+          "order"."idempotencyKey" AS "order_idempotencyKey",
+          "order"."customer_name" AS "order_customer_name",
+          "order"."status" AS "order_status",
+          "order"."created_at" AS "order_created_at",
+          "order"."updated_at" AS "order_updated_at",
+          "order"."user_id" AS "order_user_id",
+          "items"."id" AS "items_id",
+          "items"."quantity" AS "items_quantity",
+          "items"."price" AS "items_price",
+          "items"."created_at" AS "items_created_at",
+          "items"."updated_at" AS "items_updated_at",
+          "items"."order_id" AS "items_order_id",
+          "items"."product_id" AS "items_product_id",
+          "product"."id" AS "product_id",
+          "product"."name" AS "product_name",
+          "product"."price" AS "product_price",
+          "product"."stock" AS "product_stock",
+          "product"."created_at" AS "product_created_at",
+          "product"."updated_at" AS "product_updated_at",
+          "user"."id" AS "user_id",
+          "user"."email" AS "user_email",
+          "user"."name" AS "user_name",
+          "user"."password" AS "user_password"
+   FROM "site"."s_order" "order"
+   LEFT JOIN "site"."s_order_item" "items" ON "items"."order_id"="order"."id"
+   LEFT JOIN "site"."s_product" "product" ON "product"."id"="items"."product_id"
+   LEFT JOIN "site"."s_user" "user" ON "user"."id"="order"."user_id") "distinctAlias"
+ORDER BY "order_id" ASC
+LIMIT 2
+OFFSET 0
+
+Запит 2
+SELECT "order"."id" AS "order_id",
+       "order"."total" AS "order_total",
+       "order"."idempotencyKey" AS "order_idempotencyKey",
+       "order"."customer_name" AS "order_customer_name",
+       "order"."status" AS "order_status",
+       "order"."created_at" AS "order_created_at",
+       "order"."updated_at" AS "order_updated_at",
+       "order"."user_id" AS "order_user_id",
+       "items"."id" AS "items_id",
+       "items"."quantity" AS "items_quantity",
+       "items"."price" AS "items_price",
+       "items"."created_at" AS "items_created_at",
+       "items"."updated_at" AS "items_updated_at",
+       "items"."order_id" AS "items_order_id",
+       "items"."product_id" AS "items_product_id",
+       "product"."id" AS "product_id",
+       "product"."name" AS "product_name",
+       "product"."price" AS "product_price",
+       "product"."stock" AS "product_stock",
+       "product"."created_at" AS "product_created_at",
+       "product"."updated_at" AS "product_updated_at",
+       "user"."id" AS "user_id",
+       "user"."email" AS "user_email",
+       "user"."name" AS "user_name",
+       "user"."password" AS "user_password"
+FROM "site"."s_order" "order"
+LEFT JOIN "site"."s_order_item" "items" ON "items"."order_id"="order"."id"
+LEFT JOIN "site"."s_product" "product" ON "product"."id"="items"."product_id"
+LEFT JOIN "site"."s_user" "user" ON "user"."id"="order"."user_id"
+WHERE "order"."id" IN (1,
+                       2)
+
+### 5 — Error handling
+Валідація input через class-validator + DTOs:
+    orders-filter.input.ts
+    orders-pagination.input.ts
+    Додано global ValidationPipe в src/main.ts.
+    GraphQL конфіг: форматування помилок (debug: false, formatError) — коротке повідомлення клієнту      логування в сервісі (Logger.error).
