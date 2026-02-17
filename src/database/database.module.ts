@@ -23,7 +23,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         //logging: ['query', 'error', 'warn'], // Логує всі запити, помилки та попередження
         logger: 'advanced-console', // Використовує розширений консольний логер для кращого форматування
         //maxQueryExecutionTime: 1000, // Логує запити > 1000ms
-        logging: true, // Включає логування усіх SQL запитів
+        logging: false, // Включає логування усіх SQL запитів
       }),
     }),
   ],
